@@ -84,6 +84,7 @@ func (r *MonitorRepo) Update(ctx context.Context, id primitive.ObjectID, req mod
 			"method":        req.Method,
 			"interval_s":    req.Interval,
 			"timeout_ms":    req.Timeout,
+			"headers":       req.Headers,
 			"alert_email":   req.AlertEmail,
 			"alert_webhook": req.AlertWebhook,
 			"updated_at":    time.Now(),

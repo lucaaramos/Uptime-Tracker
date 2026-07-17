@@ -78,6 +78,7 @@ func (s *Scheduler) enqueueCheck(mon model.Monitor) {
 		MonitorID: mon.ID.Hex(),
 		URL:       mon.URL,
 		Method:    mon.Method,
+		Headers:   mon.Headers,
 		TimeoutMs: mon.Timeout,
 		Timestamp: time.Now().UnixMilli(),
 	}

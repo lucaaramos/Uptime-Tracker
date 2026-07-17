@@ -14,6 +14,7 @@ type Monitor struct {
 	Interval     int                `bson:"interval_s" json:"interval_s"`
 	Timeout      int                `bson:"timeout_ms" json:"timeout_ms"`
 	Status       string             `bson:"status" json:"status"`
+	Headers      map[string]string  `bson:"headers,omitempty" json:"headers,omitempty"`
 	AlertEmail   string             `bson:"alert_email,omitempty" json:"alert_email,omitempty"`
 	AlertWebhook string             `bson:"alert_webhook,omitempty" json:"alert_webhook,omitempty"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
@@ -21,13 +22,14 @@ type Monitor struct {
 }
 
 type MonitorRequest struct {
-	Name         string `json:"name"`
-	URL          string `json:"url"`
-	Method       string `json:"method"`
-	Interval     int    `json:"interval_s"`
-	Timeout      int    `json:"timeout_ms"`
-	AlertEmail   string `json:"alert_email,omitempty"`
-	AlertWebhook string `json:"alert_webhook,omitempty"`
+	Name         string            `json:"name"`
+	URL          string            `json:"url"`
+	Method       string            `json:"method"`
+	Interval     int               `json:"interval_s"`
+	Timeout      int               `json:"timeout_ms"`
+	Headers      map[string]string `json:"headers,omitempty"`
+	AlertEmail   string            `json:"alert_email,omitempty"`
+	AlertWebhook string            `json:"alert_webhook,omitempty"`
 }
 
 type MonitorResponse struct {

@@ -111,6 +111,9 @@ func (w *Worker) executeCheck(job model.CheckJob) *model.CheckResult {
 	}
 
 	req.Header.Set("User-Agent", "UptimeTracker/1.0")
+	for k, v := range job.Headers {
+		req.Header.Set(k, v)
+	}
 
 	resp, err := w.client.Do(req)
 	if err != nil {

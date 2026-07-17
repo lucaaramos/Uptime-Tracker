@@ -1,0 +1,4 @@
+.env
+uptimed
+tmp/
+*.log

@@ -17,11 +17,12 @@ type CheckResult struct {
 }
 
 type CheckJob struct {
-	MonitorID string `json:"monitor_id"`
-	URL       string `json:"url"`
-	Method    string `json:"method"`
-	TimeoutMs int    `json:"timeout_ms"`
-	Timestamp int64  `json:"timestamp"`
+	MonitorID string            `json:"monitor_id"`
+	URL       string            `json:"url"`
+	Method    string            `json:"method"`
+	Headers   map[string]string `json:"headers,omitempty"`
+	TimeoutMs int               `json:"timeout_ms"`
+	Timestamp int64             `json:"timestamp"`
 }
 
 type CheckResultMessage struct {
