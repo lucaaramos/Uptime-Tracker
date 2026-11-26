@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -18,6 +19,30 @@ type CheckRepo struct {
 
 func NewCheckRepo(db *mongo.Database) *CheckRepo {
 	return &CheckRepo{coll: db.Collection("check_results")}
+}
+
+func (r *CheckRepo) EnsureIndexes(ctx context.Context, retentionDays int) error {
+	models := []mongo.IndexModel{
+		{
+			Keys: bson.D{
+				{Key: "monitor_id", Value: 1},
+				{Key: "checked_at", Value: -1},
+			},
+		},
+	}
+
+	if retentionDays > 0 {
+		expireAfter := int32(retentionDays * 86400)
+		models = append(models, mongo.IndexModel{
+			Keys:    bson.D{{Key: "checked_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(expireAfter),
+		})
+	}
+
+	if _, err := r.coll.Indexes().CreateMany(ctx, models); err != nil {
+		return fmt.Errorf("create check_results indexes: %w", err)
+	}
+	return nil
 }
 
 func (r *CheckRepo) Insert(ctx context.Context, cr *model.CheckResult) error {

@@ -48,6 +48,8 @@ services:
       SCHEDULER_INTERVAL: "10s"
       WORKER_COUNT: "5"
       LOG_LEVEL: "debug"
+      CHECK_RETENTION_DAYS: "30"
+      ALLOW_PRIVATE_URLS: "true"
     depends_on:
       mongodb:
         condition: service_started

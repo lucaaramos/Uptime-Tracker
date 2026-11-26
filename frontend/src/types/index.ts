@@ -61,7 +61,20 @@ export interface LoginResponse {
 }
 
 export interface APIKeyResponse {
+  id: string
+  name: string
+  prefix: string
   api_key: string
+  created_at: string
+}
+
+export interface APIKeyInfo {
+  id: string
+  user_id: string
+  name: string
+  prefix: string
+  created_at: string
+  last_used_at?: string
 }
 
 export interface WSCheckResult {

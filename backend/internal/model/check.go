@@ -44,11 +44,11 @@ type AlertMessage struct {
 }
 
 type Stats struct {
-	UptimePercent  float64 `json:"uptime_percent"`
-	AvgLatencyMs   float64 `json:"avg_latency_ms"`
-	P95LatencyMs   float64 `json:"p95_latency_ms"`
-	P99LatencyMs   float64 `json:"p99_latency_ms"`
-	TotalChecks    int     `json:"total_checks"`
-	SuccessChecks  int     `json:"success_checks"`
-	FailureChecks  int     `json:"failure_checks"`
+	UptimePercent float64 `json:"uptime_percent"`
+	AvgLatencyMs  float64 `json:"avg_latency_ms"`
+	P95LatencyMs  float64 `json:"p95_latency_ms"`
+	P99LatencyMs  float64 `json:"p99_latency_ms"`
+	TotalChecks   int     `json:"total_checks"`
+	SuccessChecks int     `json:"success_checks"`
+	FailureChecks int     `json:"failure_checks"`
 }

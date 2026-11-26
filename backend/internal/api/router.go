@@ -21,6 +21,7 @@ type Server struct {
 	hub     *ws.Hub
 	monitor *repository.MonitorRepo
 	check   *repository.CheckRepo
+	auth    AuthStore
 	rdb     *redis.Client
 }
 
@@ -32,12 +33,13 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func NewServer(cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, rdb *redis.Client) *Server {
+func NewServer(cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, auth AuthStore, rdb *redis.Client) *Server {
 	s := &Server{
 		cfg:     cfg,
 		hub:     hub,
 		monitor: monitor,
 		check:   check,
+		auth:    auth,
 		rdb:     rdb,
 	}
 	s.buildRouter()
@@ -60,18 +62,22 @@ func (s *Server) buildRouter() {
 		MaxAge:           300,
 	}))
 
-	authHandler := NewAuthHandler(s.cfg.JWTSecret)
+	authHandler := NewAuthHandler(s.cfg.JWTSecret, s.auth)
 	monitorHandler := NewMonitorHandler(s.monitor, s.check, s.rdb)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health)
 
+		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
-		r.Post("/auth/apikey", authHandler.GenerateAPIKey)
 
 		r.Group(func(r chi.Router) {
-			r.Use(AuthMiddleware(s.cfg.JWTSecret))
-			r.Use(RateLimiter(s.rdb, 60, 60))
+			r.Use(AuthMiddleware(s.cfg.JWTSecret, s.auth))
+			r.Use(RateLimiter(s.rdb, 60, 60*time.Second))
+
+			r.Post("/auth/apikey", authHandler.GenerateAPIKey)
+			r.Get("/auth/apikeys", authHandler.ListAPIKeys)
+			r.Delete("/auth/apikeys/{id}", authHandler.RevokeAPIKey)
 
 			r.Post("/monitors", monitorHandler.Create)
 			r.Get("/monitors", monitorHandler.List)
@@ -85,7 +91,7 @@ func (s *Server) buildRouter() {
 		})
 	})
 
-	// WebSocket endpoint
+	// WebSocket endpoint (authenticated via ?token=... / ?api_key=... or headers)
 	r.Get("/ws", s.handleWS)
 
 	s.router = r
@@ -98,6 +104,11 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
+	if _, err := authenticateRequest(r, s.cfg.JWTSecret, s.auth, true); err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error().Err(err).Msg("websocket upgrade failed")

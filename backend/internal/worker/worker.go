@@ -35,12 +35,7 @@ func New(cfg *config.Config, check *repository.CheckRepo, monitor *repository.Mo
 		monitor: monitor,
 		mq:      mq,
 		rdb:     rdb,
-		client: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:    100,
-				IdleConnTimeout: 90 * time.Second,
-			},
-		},
+		client:  newHTTPClient(cfg.AllowPrivateURLs),
 	}
 }
 
@@ -100,6 +95,13 @@ func (w *Worker) executeCheck(job model.CheckJob) *model.CheckResult {
 	method := strings.ToUpper(job.Method)
 	if method == "" {
 		method = "GET"
+	}
+
+	if err := validateTargetURL(job.URL); err != nil {
+		result.Success = false
+		result.ErrorMsg = err.Error()
+		result.LatencyMs = time.Since(start).Milliseconds()
+		return result
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, job.URL, nil)

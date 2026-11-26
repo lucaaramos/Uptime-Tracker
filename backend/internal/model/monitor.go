@@ -33,7 +33,7 @@ type MonitorRequest struct {
 }
 
 type MonitorResponse struct {
-	Monitor    Monitor `json:"monitor"`
+	Monitor    Monitor      `json:"monitor"`
 	LastResult *CheckResult `json:"last_result,omitempty"`
-	Uptime24h  float64 `json:"uptime_24h,omitempty"`
+	Uptime24h  float64      `json:"uptime_24h,omitempty"`
 }

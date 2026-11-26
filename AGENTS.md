@@ -94,8 +94,11 @@ Base: `/api/v1`. Los `{id}` son ObjectID hex de Mongo.
 | Método | Ruta                          | Auth | Descripción                        |
 |--------|-------------------------------|------|------------------------------------|
 | GET    | `/health`                     | No   | Health check del API               |
-| POST   | `/auth/login`                 | No   | Devuelve JWT (24h)                 |
-| POST   | `/auth/apikey`                | No   | Genera API key `ut_<64 hex>`       |
+| POST   | `/auth/register`              | No   | Registrar usuario y devolver JWT   |
+| POST   | `/auth/login`                 | No   | Login contra MongoDB (bcrypt + JWT)|
+| POST   | `/auth/apikey`                | Sí   | Genera y persiste API key `ut_<64 hex>` (hash SHA-256) |
+| GET    | `/auth/apikeys`               | Sí   | Listar API keys del usuario        |
+| DELETE | `/auth/apikeys/{id}`          | Sí   | Revocar API key                    |
 | POST   | `/monitors`                   | Sí   | Crear monitor                      |
 | GET    | `/monitors`                   | Sí   | Listar con `last_result` y `uptime_24h` |
 | GET    | `/monitors/{id}`              | Sí   | Detalle + último resultado + uptime |
@@ -105,16 +108,19 @@ Base: `/api/v1`. Los `{id}` son ObjectID hex de Mongo.
 | POST   | `/monitors/{id}/resume`       | Sí   | status → `active`                  |
 | GET    | `/monitors/{id}/history`      | Sí   | `?limit` (máx 100, def 50) `&offset` |
 | GET    | `/monitors/{id}/stats`        | Sí   | `?period=24h\|7d\|30d`             |
-| GET    | `/ws`                         | No   | WebSocket de resultados en vivo    |
+| GET    | `/ws`                         | Sí   | WebSocket de resultados en vivo (`?token=` o `?api_key=`) |
 
-Auth: `Authorization: Bearer <jwt>` o `X-API-Key: <key>`. Rate limit: 60 req/60s por IP+ruta (Redis).
+Auth: `Authorization: Bearer <jwt>` o `X-API-Key: <key>` (en `/ws` también `?token=` o `?api_key=`). Rate limit: 60 req/60s por IP+ruta (Redis).
 
 ## Almacenamiento
 
 MongoDB (`uptime_tracker`):
 - `monitors`: `_id`, `name`, `url`, `method`, `interval_s` (def 60), `timeout_ms` (def 5000), `status`
-  (`active|paused`), `headers`, `alert_email`, `alert_webhook`, `created_at`, `updated_at`.
+  (`active|paused`), `headers`, `alert_email`, `alert_webhook`, `created_at`, `updated_at`. Índice `(status, created_at desc)`.
 - `check_results`: `_id`, `monitor_id`, `status_code`, `latency_ms`, `success`, `error_msg`, `checked_at`.
+  Índices: `(monitor_id, checked_at desc)` y TTL en `checked_at` (`CHECK_RETENTION_DAYS`, def 30 días).
+- `users`: `_id`, `username` (único), `password_hash` (bcrypt), `created_at`.
+- `api_keys`: `_id`, `user_id`, `name`, `prefix`, `key_hash` (SHA-256 único), `created_at`, `last_used_at`.
 
 Redis:
 - `monitor:<id>:last_result` → JSON del último `CheckResult` (TTL 1h).
@@ -149,26 +155,17 @@ stats (uptime, media, p95, p99), caché, rate limit, WebSocket, alertas email/we
 
 Limitaciones conocidas (no "arreglar" sin pedirlo, pero tenerlas en cuenta):
 
-- **Auth de prototipo**: el login acepta cualquier usuario/contraseña no vacíos; no hay usuarios ni
-  hash de passwords. Las API keys se generan pero no se persisten ni validan: cualquier `X-API-Key`
-  pasa. `middleware.go` hace `apiKey[:8]`, que entra en pánico con keys de menos de 8 caracteres.
-  El endpoint `/ws` no tiene auth.
-- **Broadcast WS roto**: en `main.go` (`consumeResults`) se pasa `msg.Body` (`[]byte`) a
-  `hub.Broadcast`, que hace `json.Marshal` y produce un string base64 en vez del objeto JSON.
-  El fix correcto es `hub.Broadcast(json.RawMessage(msg.Body))`.
 - **Alert worker solo corre en `--mode all`**; no existe `--mode alert`. No hay notificación de
   recuperación ni formato específico de Slack.
 - **Escalado**: el scheduler no usa lock distribuido (instancias duplicarían checks); varias
   instancias del API compiten por `checks.results`, por lo que el broadcast WS no llega a todos.
-- **Rendimiento**: no se crean índices en Mongo; `List` hace N+1 consultas (último resultado +
-  stats 24h por monitor); los percentiles se calculan en Go tras traer todas las latencias.
-- **Concurrencia WS**: `Hub.Broadcast` borra clientes del map bajo `RLock` (debería ser `Lock`) y
-  puede cerrar `client.send` dos veces.
-- **Tests**: frontend solo tiene un test placeholder; backend no cubre workers, scheduler, alerting
-  ni repositorios.
+- **Rendimiento**: `List` hace N+1 consultas (último resultado + stats 24h por monitor); los
+  percentiles se calculan en Go tras traer todas las latencias.
+- **Tests**: frontend solo tiene un test placeholder; backend aún no cubre scheduler, alerting
+  ni repositorios con integración.
 - **UI**: el selector 24h/7d/30d solo afecta a las stats, no filtra el historial del gráfico.
   `PUT /monitors/{id}` sobrescribe con ceros si el body es parcial.
-- Sin OpenAPI/Swagger, multi-usuario, retención de historial ni métricas Prometheus.
+- Sin OpenAPI/Swagger, aislamiento multi-tenant de monitores ni métricas Prometheus.
 
 ## Reglas para agentes
 
