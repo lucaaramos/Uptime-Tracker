@@ -17,13 +17,20 @@ const (
 )
 
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	hub       *Hub
+	conn      *websocket.Conn
+	send      chan []byte
+	closeOnce sync.Once
+}
+
+func (c *Client) closeSend() {
+	c.closeOnce.Do(func() {
+		close(c.send)
+	})
 }
 
 type Hub struct {
-	mu      sync.RWMutex
+	mu      sync.Mutex
 	clients map[*Client]bool
 }
 
@@ -59,7 +66,7 @@ func (h *Hub) Unregister(client *Client) {
 	h.mu.Lock()
 	if _, ok := h.clients[client]; ok {
 		delete(h.clients, client)
-		close(client.send)
+		client.closeSend()
 	}
 	h.mu.Unlock()
 	log.Info().Msg("websocket client disconnected")
@@ -72,15 +79,15 @@ func (h *Hub) Broadcast(msg interface{}) {
 		return
 	}
 
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	for client := range h.clients {
 		select {
 		case client.send <- data:
 		default:
-			close(client.send)
 			delete(h.clients, client)
+			client.closeSend()
 		}
 	}
 }

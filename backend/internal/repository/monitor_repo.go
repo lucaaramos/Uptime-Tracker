@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/lv99/uptime-tracker/internal/model"
@@ -17,6 +18,19 @@ type MonitorRepo struct {
 
 func NewMonitorRepo(db *mongo.Database) *MonitorRepo {
 	return &MonitorRepo{coll: db.Collection("monitors")}
+}
+
+func (r *MonitorRepo) EnsureIndexes(ctx context.Context) error {
+	_, err := r.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "status", Value: 1},
+			{Key: "created_at", Value: -1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("create monitors indexes: %w", err)
+	}
+	return nil
 }
 
 func (r *MonitorRepo) Create(ctx context.Context, m *model.Monitor) error {
