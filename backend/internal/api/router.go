@@ -16,13 +16,14 @@ import (
 )
 
 type Server struct {
-	cfg     *config.Config
-	router  *chi.Mux
-	hub     *ws.Hub
-	monitor *repository.MonitorRepo
-	check   *repository.CheckRepo
-	auth    AuthStore
-	rdb     *redis.Client
+	cfg       *config.Config
+	router    *chi.Mux
+	hub       *ws.Hub
+	monitor   *repository.MonitorRepo
+	check     *repository.CheckRepo
+	incidents IncidentLister
+	auth      AuthStore
+	rdb       *redis.Client
 }
 
 var upgrader = websocket.Upgrader{
@@ -33,14 +34,15 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func NewServer(cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, auth AuthStore, rdb *redis.Client) *Server {
+func NewServer(cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, incidents IncidentLister, auth AuthStore, rdb *redis.Client) *Server {
 	s := &Server{
-		cfg:     cfg,
-		hub:     hub,
-		monitor: monitor,
-		check:   check,
-		auth:    auth,
-		rdb:     rdb,
+		cfg:       cfg,
+		hub:       hub,
+		monitor:   monitor,
+		check:     check,
+		incidents: incidents,
+		auth:      auth,
+		rdb:       rdb,
 	}
 	s.buildRouter()
 	return s
@@ -64,6 +66,7 @@ func (s *Server) buildRouter() {
 
 	authHandler := NewAuthHandler(s.cfg.JWTSecret, s.auth)
 	monitorHandler := NewMonitorHandler(s.monitor, s.check, s.rdb)
+	incidentHandler := NewIncidentHandler(s.incidents)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health)
@@ -79,6 +82,8 @@ func (s *Server) buildRouter() {
 			r.Get("/auth/apikeys", authHandler.ListAPIKeys)
 			r.Delete("/auth/apikeys/{id}", authHandler.RevokeAPIKey)
 
+			r.Get("/incidents", incidentHandler.List)
+
 			r.Post("/monitors", monitorHandler.Create)
 			r.Get("/monitors", monitorHandler.List)
 			r.Get("/monitors/{id}", monitorHandler.GetByID)
@@ -88,6 +93,7 @@ func (s *Server) buildRouter() {
 			r.Post("/monitors/{id}/resume", monitorHandler.Resume)
 			r.Get("/monitors/{id}/history", monitorHandler.History)
 			r.Get("/monitors/{id}/stats", monitorHandler.Stats)
+			r.Get("/monitors/{id}/incidents", incidentHandler.ListByMonitor)
 		})
 	})
 

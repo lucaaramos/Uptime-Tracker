@@ -108,6 +108,8 @@ Base: `/api/v1`. Los `{id}` son ObjectID hex de Mongo.
 | POST   | `/monitors/{id}/resume`       | Sí   | status → `active`                  |
 | GET    | `/monitors/{id}/history`      | Sí   | `?limit` (máx 100, def 50) `&offset` |
 | GET    | `/monitors/{id}/stats`        | Sí   | `?period=24h\|7d\|30d`             |
+| GET    | `/monitors/{id}/incidents`    | Sí   | Historial de incidentes del monitor |
+| GET    | `/incidents`                  | Sí   | Incidentes recientes (`?status=open\|resolved`) |
 | GET    | `/ws`                         | Sí   | WebSocket de resultados en vivo (`?token=` o `?api_key=`) |
 
 Auth: `Authorization: Bearer <jwt>` o `X-API-Key: <key>` (en `/ws` también `?token=` o `?api_key=`). Rate limit: 60 req/60s por IP+ruta (Redis).
@@ -119,6 +121,8 @@ MongoDB (`uptime_tracker`):
   (`active|paused`), `headers`, `alert_email`, `alert_webhook`, `created_at`, `updated_at`. Índice `(status, created_at desc)`.
 - `check_results`: `_id`, `monitor_id`, `status_code`, `latency_ms`, `success`, `error_msg`, `checked_at`.
   Índices: `(monitor_id, checked_at desc)` y TTL en `checked_at` (`CHECK_RETENTION_DAYS`, def 30 días).
+- `incidents`: `_id`, `monitor_id`, `monitor_name`, `url`, `status` (`open|resolved`), `cause`,
+  `status_code`, `fail_count`, `started_at`, `resolved_at`, `duration_s`. Índices: `(monitor_id, started_at desc)` y `(status, started_at desc)`.
 - `users`: `_id`, `username` (único), `password_hash` (bcrypt), `created_at`.
 - `api_keys`: `_id`, `user_id`, `name`, `prefix`, `key_hash` (SHA-256 único), `created_at`, `last_used_at`.
 
@@ -155,8 +159,7 @@ stats (uptime, media, p95, p99), caché, rate limit, WebSocket, alertas email/we
 
 Limitaciones conocidas (no "arreglar" sin pedirlo, pero tenerlas en cuenta):
 
-- **Alert worker solo corre en `--mode all`**; no existe `--mode alert`. No hay notificación de
-  recuperación ni formato específico de Slack.
+- **Alert worker solo corre en `--mode all`**; no existe `--mode alert`. No hay formato específico de Slack/Discord/Telegram.
 - **Escalado**: el scheduler no usa lock distribuido (instancias duplicarían checks); varias
   instancias del API compiten por `checks.results`, por lo que el broadcast WS no llega a todos.
 - **Rendimiento**: `List` hace N+1 consultas (último resultado + stats 24h por monitor); los

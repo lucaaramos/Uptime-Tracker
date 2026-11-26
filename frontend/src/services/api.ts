@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   APIKeyResponse,
   APIKeyInfo,
+  Incident,
 } from '../types'
 
 const api = axios.create({
@@ -112,6 +113,28 @@ export async function getMonitorStats(
 ): Promise<Stats> {
   const { data } = await api.get(`/monitors/${id}/stats`, {
     params: { period },
+  })
+  return data
+}
+
+export async function getIncidents(
+  status?: 'open' | 'resolved',
+  limit = 50,
+  offset = 0
+): Promise<Incident[]> {
+  const { data } = await api.get('/incidents', {
+    params: { ...(status ? { status } : {}), limit, offset },
+  })
+  return data
+}
+
+export async function getMonitorIncidents(
+  id: string,
+  limit = 20,
+  offset = 0
+): Promise<Incident[]> {
+  const { data } = await api.get(`/monitors/${id}/incidents`, {
+    params: { limit, offset },
   })
   return data
 }

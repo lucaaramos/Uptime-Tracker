@@ -4,12 +4,29 @@ import LatencyChart from '../components/LatencyChart'
 import MonitorForm from '../components/MonitorForm'
 import * as api from '../services/api'
 import { useWebSocket } from '../hooks/useWebSocket'
-import type { MonitorResponse, CheckResult, Stats, MonitorRequest, WSCheckResult } from '../types'
+import type {
+  MonitorResponse,
+  CheckResult,
+  Stats,
+  MonitorRequest,
+  WSCheckResult,
+  Incident,
+} from '../types'
+
+function formatDuration(seconds?: number): string {
+  if (seconds === undefined || seconds < 0) return '--'
+  if (seconds < 60) return `${seconds}s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  return `${h}h ${m}m`
+}
 
 export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [monitor, setMonitor] = useState<MonitorResponse | null>(null)
   const [history, setHistory] = useState<CheckResult[]>([])
+  const [incidents, setIncidents] = useState<Incident[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('24h')
@@ -18,14 +35,16 @@ export default function MonitorDetailPage() {
   const fetchData = useCallback(async () => {
     if (!id) return
     try {
-      const [mon, hist, st] = await Promise.all([
+      const [mon, hist, st, incs] = await Promise.all([
         api.getMonitor(id),
         api.getMonitorHistory(id, 100),
         api.getMonitorStats(id, period),
+        api.getMonitorIncidents(id, 20),
       ])
       setMonitor(mon)
       setHistory(hist)
       setStats(st)
+      setIncidents(incs)
     } catch {
       // handled
     } finally {
@@ -253,6 +272,64 @@ export default function MonitorDetailPage() {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Incidents ({incidents.length})
+        </h2>
+        {incidents.length === 0 ? (
+          <div className="text-center py-6 text-gray-400 text-sm">
+            No incidents recorded.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 border-b">
+                  <th className="pb-2 font-medium">Status</th>
+                  <th className="pb-2 font-medium">Cause</th>
+                  <th className="pb-2 font-medium">Started</th>
+                  <th className="pb-2 font-medium">Resolved</th>
+                  <th className="pb-2 font-medium">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidents.map((inc) => (
+                  <tr key={inc.id} className="border-b border-gray-50">
+                    <td className="py-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          inc.status === 'open'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}
+                      >
+                        {inc.status === 'open' ? 'OPEN' : 'RESOLVED'}
+                      </span>
+                    </td>
+                    <td className="py-2 text-gray-700 max-w-xs truncate">
+                      {inc.cause}
+                    </td>
+                    <td className="py-2 text-gray-600">
+                      {new Date(inc.started_at).toLocaleString()}
+                    </td>
+                    <td className="py-2 text-gray-600">
+                      {inc.resolved_at
+                        ? new Date(inc.resolved_at).toLocaleString()
+                        : 'Ongoing'}
+                    </td>
+                    <td className="py-2 text-gray-600">
+                      {inc.status === 'resolved'
+                        ? formatDuration(inc.duration_s)
+                        : '--'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">

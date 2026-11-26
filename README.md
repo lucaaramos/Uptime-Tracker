@@ -58,6 +58,8 @@ El binario acepta un flag `--mode` para ejecutar componentes de forma independie
 | POST | `/api/v1/monitors/:id/resume` | Reanudar monitor |
 | GET | `/api/v1/monitors/:id/history` | Historial de checks |
 | GET | `/api/v1/monitors/:id/stats` | Estadísticas |
+| GET | `/api/v1/monitors/:id/incidents` | Incidentes del monitor |
+| GET | `/api/v1/incidents` | Incidentes recientes (`?status=open\|resolved`) |
 | GET | `/ws` | WebSocket (actualizaciones en vivo) |
 
 ## Setup local

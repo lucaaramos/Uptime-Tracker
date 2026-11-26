@@ -77,7 +77,7 @@ func TestSafeDialContextBlocksPrivateIPs(t *testing.T) {
 
 func TestExecuteCheckSSRFProtection(t *testing.T) {
 	// Blocked when AllowPrivateURLs is false
-	wBlocked := New(&config.Config{AllowPrivateURLs: false}, nil, nil, nil, nil)
+	wBlocked := New(&config.Config{AllowPrivateURLs: false}, nil, nil, nil, nil, nil)
 	resBlocked := wBlocked.executeCheck(model.CheckJob{
 		URL:       "http://127.0.0.1:18080/health",
 		Method:    "GET",
@@ -101,7 +101,7 @@ func TestExecuteCheckSSRFProtection(t *testing.T) {
 	}
 
 	// When AllowPrivateURLs is true, custom SSRF DialContext is not installed
-	wAllowed := New(&config.Config{AllowPrivateURLs: true}, nil, nil, nil, nil)
+	wAllowed := New(&config.Config{AllowPrivateURLs: true}, nil, nil, nil, nil, nil)
 	tr, ok := wAllowed.client.Transport.(*http.Transport)
 	if !ok {
 		t.Fatal("expected *http.Transport")

@@ -57,6 +57,7 @@ func main() {
 	db := mongoClient.Database(cfg.MongoDB)
 	monitorRepo := repository.NewMonitorRepo(db)
 	checkRepo := repository.NewCheckRepo(db)
+	incidentRepo := repository.NewIncidentRepo(db)
 	authRepo := repository.NewAuthRepo(db)
 
 	idxCtx, idxCancel := context.WithTimeout(ctx, 15*time.Second)
@@ -66,6 +67,9 @@ func main() {
 	}
 	if err := checkRepo.EnsureIndexes(idxCtx, cfg.CheckRetentionDays); err != nil {
 		log.Warn().Err(err).Msg("failed to ensure check indexes")
+	}
+	if err := incidentRepo.EnsureIndexes(idxCtx); err != nil {
+		log.Warn().Err(err).Msg("failed to ensure incident indexes")
 	}
 	if err := authRepo.EnsureIndexes(idxCtx); err != nil {
 		log.Warn().Err(err).Msg("failed to ensure auth indexes")
@@ -105,14 +109,14 @@ func main() {
 
 	switch *mode {
 	case "api":
-		runAPI(ctx, cfg, hub, monitorRepo, checkRepo, authRepo, rdb)
+		runAPI(ctx, cfg, hub, monitorRepo, checkRepo, incidentRepo, authRepo, rdb)
 	case "worker":
-		runWorker(ctx, cfg, monitorRepo, checkRepo, mq, rdb)
+		runWorker(ctx, cfg, monitorRepo, checkRepo, incidentRepo, mq, rdb)
 	case "scheduler":
 		runScheduler(ctx, cfg, monitorRepo, checkRepo, mq, rdb)
 	case "all":
-		go runAPI(ctx, cfg, hub, monitorRepo, checkRepo, authRepo, rdb)
-		go runWorker(ctx, cfg, monitorRepo, checkRepo, mq, rdb)
+		go runAPI(ctx, cfg, hub, monitorRepo, checkRepo, incidentRepo, authRepo, rdb)
+		go runWorker(ctx, cfg, monitorRepo, checkRepo, incidentRepo, mq, rdb)
 		go runScheduler(ctx, cfg, monitorRepo, checkRepo, mq, rdb)
 		go runAlertWorker(ctx, cfg, monitorRepo, mq)
 	default:
@@ -130,8 +134,8 @@ func main() {
 	log.Info().Msg("shutdown complete")
 }
 
-func runAPI(ctx context.Context, cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, auth *repository.AuthRepo, rdb *redis.Client) {
-	srv := api.NewServer(cfg, hub, monitor, check, auth, rdb)
+func runAPI(ctx context.Context, cfg *config.Config, hub *ws.Hub, monitor *repository.MonitorRepo, check *repository.CheckRepo, incidents *repository.IncidentRepo, auth *repository.AuthRepo, rdb *redis.Client) {
+	srv := api.NewServer(cfg, hub, monitor, check, incidents, auth, rdb)
 
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -151,8 +155,8 @@ func runAPI(ctx context.Context, cfg *config.Config, hub *ws.Hub, monitor *repos
 	httpServer.Shutdown(shutdownCtx)
 }
 
-func runWorker(ctx context.Context, cfg *config.Config, monitor *repository.MonitorRepo, check *repository.CheckRepo, mq *messaging.RabbitMQ, rdb *redis.Client) {
-	w := worker.New(cfg, check, monitor, mq, rdb)
+func runWorker(ctx context.Context, cfg *config.Config, monitor *repository.MonitorRepo, check *repository.CheckRepo, incidents *repository.IncidentRepo, mq *messaging.RabbitMQ, rdb *redis.Client) {
+	w := worker.New(cfg, check, monitor, incidents, mq, rdb)
 	if err := w.Start(ctx); err != nil {
 		log.Fatal().Err(err).Msg("worker error")
 	}

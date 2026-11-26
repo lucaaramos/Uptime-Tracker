@@ -35,11 +35,14 @@ type CheckResultMessage struct {
 }
 
 type AlertMessage struct {
+	Type        string `json:"type,omitempty"`
+	IncidentID  string `json:"incident_id,omitempty"`
 	MonitorID   string `json:"monitor_id"`
 	MonitorName string `json:"monitor_name"`
 	URL         string `json:"url"`
 	FailCount   int    `json:"fail_count"`
-	LastError   string `json:"last_error"`
+	LastError   string `json:"last_error,omitempty"`
+	DurationSec int64  `json:"duration_s,omitempty"`
 	Timestamp   int64  `json:"timestamp"`
 }
 

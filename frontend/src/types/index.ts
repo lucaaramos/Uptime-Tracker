@@ -85,3 +85,17 @@ export interface WSCheckResult {
   error_msg?: string
   checked_at: number
 }
+
+export interface Incident {
+  id: string
+  monitor_id: string
+  monitor_name: string
+  url: string
+  status: 'open' | 'resolved'
+  cause: string
+  status_code?: number
+  fail_count: number
+  started_at: string
+  resolved_at?: string
+  duration_s?: number
+}
