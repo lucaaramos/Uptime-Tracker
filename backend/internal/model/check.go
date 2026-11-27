@@ -35,20 +35,23 @@ type CheckResultMessage struct {
 }
 
 type AlertMessage struct {
+	Type        string `json:"type,omitempty"`
+	IncidentID  string `json:"incident_id,omitempty"`
 	MonitorID   string `json:"monitor_id"`
 	MonitorName string `json:"monitor_name"`
 	URL         string `json:"url"`
 	FailCount   int    `json:"fail_count"`
-	LastError   string `json:"last_error"`
+	LastError   string `json:"last_error,omitempty"`
+	DurationSec int64  `json:"duration_s,omitempty"`
 	Timestamp   int64  `json:"timestamp"`
 }
 
 type Stats struct {
-	UptimePercent  float64 `json:"uptime_percent"`
-	AvgLatencyMs   float64 `json:"avg_latency_ms"`
-	P95LatencyMs   float64 `json:"p95_latency_ms"`
-	P99LatencyMs   float64 `json:"p99_latency_ms"`
-	TotalChecks    int     `json:"total_checks"`
-	SuccessChecks  int     `json:"success_checks"`
-	FailureChecks  int     `json:"failure_checks"`
+	UptimePercent float64 `json:"uptime_percent"`
+	AvgLatencyMs  float64 `json:"avg_latency_ms"`
+	P95LatencyMs  float64 `json:"p95_latency_ms"`
+	P99LatencyMs  float64 `json:"p99_latency_ms"`
+	TotalChecks   int     `json:"total_checks"`
+	SuccessChecks int     `json:"success_checks"`
+	FailureChecks int     `json:"failure_checks"`
 }

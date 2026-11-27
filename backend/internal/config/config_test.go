@@ -36,6 +36,12 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.LogLevel != "debug" {
 		t.Errorf("expected debug log level, got %s", cfg.LogLevel)
 	}
+	if cfg.CheckRetentionDays != 30 {
+		t.Errorf("expected 30 retention days, got %d", cfg.CheckRetentionDays)
+	}
+	if cfg.AllowPrivateURLs {
+		t.Errorf("expected AllowPrivateURLs false by default")
+	}
 }
 
 func TestLoadFromEnv(t *testing.T) {
@@ -48,6 +54,10 @@ func TestLoadFromEnv(t *testing.T) {
 	os.Setenv("SCHEDULER_INTERVAL", "30s")
 	os.Setenv("WORKER_COUNT", "10")
 	os.Setenv("LOG_LEVEL", "info")
+	os.Setenv("CHECK_RETENTION_DAYS", "90")
+	os.Setenv("ALLOW_PRIVATE_URLS", "true")
+	os.Setenv("ADMIN_USERNAME", "admin")
+	os.Setenv("ADMIN_PASSWORD", "secret123")
 
 	cfg := Load()
 
@@ -74,5 +84,14 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.LogLevel != "info" {
 		t.Errorf("expected info log level, got %s", cfg.LogLevel)
+	}
+	if cfg.CheckRetentionDays != 90 {
+		t.Errorf("expected 90 retention days, got %d", cfg.CheckRetentionDays)
+	}
+	if !cfg.AllowPrivateURLs {
+		t.Errorf("expected AllowPrivateURLs true")
+	}
+	if cfg.AdminUsername != "admin" || cfg.AdminPassword != "secret123" {
+		t.Errorf("expected admin credentials to load from env")
 	}
 }

@@ -61,7 +61,20 @@ export interface LoginResponse {
 }
 
 export interface APIKeyResponse {
+  id: string
+  name: string
+  prefix: string
   api_key: string
+  created_at: string
+}
+
+export interface APIKeyInfo {
+  id: string
+  user_id: string
+  name: string
+  prefix: string
+  created_at: string
+  last_used_at?: string
 }
 
 export interface WSCheckResult {
@@ -71,4 +84,18 @@ export interface WSCheckResult {
   latency_ms: number
   error_msg?: string
   checked_at: number
+}
+
+export interface Incident {
+  id: string
+  monitor_id: string
+  monitor_name: string
+  url: string
+  status: 'open' | 'resolved'
+  cause: string
+  status_code?: number
+  fail_count: number
+  started_at: string
+  resolved_at?: string
+  duration_s?: number
 }

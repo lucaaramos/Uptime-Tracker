@@ -1,4 +1,4 @@
 .env
-uptimed
+/uptimed
 tmp/
 *.log

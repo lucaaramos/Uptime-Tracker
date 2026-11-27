@@ -8,6 +8,8 @@ import type {
   LoginRequest,
   LoginResponse,
   APIKeyResponse,
+  APIKeyInfo,
+  Incident,
 } from '../types'
 
 const api = axios.create({
@@ -29,7 +31,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && window.location.pathname !== '/login') {
       localStorage.removeItem('token')
       localStorage.removeItem('apiKey')
       window.location.href = '/login'
@@ -38,14 +40,28 @@ api.interceptors.response.use(
   }
 )
 
+export async function register(req: LoginRequest): Promise<LoginResponse> {
+  const { data } = await api.post('/auth/register', req)
+  return data
+}
+
 export async function login(req: LoginRequest): Promise<LoginResponse> {
   const { data } = await api.post('/auth/login', req)
   return data
 }
 
-export async function generateApiKey(): Promise<APIKeyResponse> {
-  const { data } = await api.post('/auth/apikey')
+export async function generateApiKey(name?: string): Promise<APIKeyResponse> {
+  const { data } = await api.post('/auth/apikey', name ? { name } : {})
   return data
+}
+
+export async function listApiKeys(): Promise<APIKeyInfo[]> {
+  const { data } = await api.get('/auth/apikeys')
+  return data
+}
+
+export async function revokeApiKey(id: string): Promise<void> {
+  await api.delete(`/auth/apikeys/${id}`)
 }
 
 export async function getMonitors(): Promise<MonitorResponse[]> {
@@ -97,6 +113,28 @@ export async function getMonitorStats(
 ): Promise<Stats> {
   const { data } = await api.get(`/monitors/${id}/stats`, {
     params: { period },
+  })
+  return data
+}
+
+export async function getIncidents(
+  status?: 'open' | 'resolved',
+  limit = 50,
+  offset = 0
+): Promise<Incident[]> {
+  const { data } = await api.get('/incidents', {
+    params: { ...(status ? { status } : {}), limit, offset },
+  })
+  return data
+}
+
+export async function getMonitorIncidents(
+  id: string,
+  limit = 20,
+  offset = 0
+): Promise<Incident[]> {
+  const { data } = await api.get(`/monitors/${id}/incidents`, {
+    params: { limit, offset },
   })
   return data
 }

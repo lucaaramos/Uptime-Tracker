@@ -70,7 +70,13 @@ func (a *AlertWorker) Start(ctx context.Context) error {
 }
 
 func (a *AlertWorker) processAlert(ctx context.Context, alert model.AlertMessage) {
+	alertType := alert.Type
+	if alertType == "" {
+		alertType = model.AlertTypeDown
+	}
+
 	log.Warn().
+		Str("type", alertType).
 		Str("monitor_id", alert.MonitorID).
 		Str("name", alert.MonitorName).
 		Int("fail_count", alert.FailCount).
@@ -88,12 +94,7 @@ func (a *AlertWorker) processAlert(ctx context.Context, alert model.AlertMessage
 		return
 	}
 
-	subject := fmt.Sprintf("[Uptime Tracker] %s is DOWN", monitor.Name)
-	body := fmt.Sprintf(
-		"Monitor: %s\nURL: %s\nFail Count: %d\nLast Error: %s\nTime: %s\n",
-		monitor.Name, monitor.URL, alert.FailCount, alert.LastError,
-		time.UnixMilli(alert.Timestamp).Format(time.RFC3339),
-	)
+	subject, body := formatAlert(monitor, alert)
 
 	if monitor.AlertEmail != "" && a.smtpHost != "" {
 		if err := a.sendEmail(monitor.AlertEmail, subject, body); err != nil {
@@ -110,6 +111,39 @@ func (a *AlertWorker) processAlert(ctx context.Context, alert model.AlertMessage
 			log.Info().Str("webhook", monitor.AlertWebhook).Msg("alert worker: webhook sent")
 		}
 	}
+}
+
+func formatAlert(monitor *model.Monitor, alert model.AlertMessage) (string, string) {
+	ts := time.UnixMilli(alert.Timestamp).UTC().Format(time.RFC3339)
+
+	if alert.Type == model.AlertTypeRecovery {
+		subject := fmt.Sprintf("[Uptime Tracker] %s is BACK UP", monitor.Name)
+		body := fmt.Sprintf(
+			"Monitor: %s\nURL: %s\nStatus: Operational\nDowntime: %s\nRecovered At: %s\n",
+			monitor.Name, monitor.URL, formatDuration(alert.DurationSec), ts,
+		)
+		return subject, body
+	}
+
+	subject := fmt.Sprintf("[Uptime Tracker] %s is DOWN", monitor.Name)
+	body := fmt.Sprintf(
+		"Monitor: %s\nURL: %s\nFail Count: %d\nLast Error: %s\nTime: %s\n",
+		monitor.Name, monitor.URL, alert.FailCount, alert.LastError, ts,
+	)
+	return subject, body
+}
+
+func formatDuration(sec int64) string {
+	if sec < 60 {
+		return fmt.Sprintf("%ds", sec)
+	}
+	if sec < 3600 {
+		return fmt.Sprintf("%dm %ds", sec/60, sec%60)
+	}
+	hours := sec / 3600
+	mins := (sec % 3600) / 60
+	rem := sec % 60
+	return fmt.Sprintf("%dh %dm %ds", hours, mins, rem)
 }
 
 func (a *AlertWorker) sendEmail(to, subject, body string) error {

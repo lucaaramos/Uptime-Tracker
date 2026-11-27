@@ -44,8 +44,11 @@ El binario acepta un flag `--mode` para ejecutar componentes de forma independie
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/v1/health` | Health check del sistema |
+| POST | `/api/v1/auth/register` | Registrar usuario (JWT) |
 | POST | `/api/v1/auth/login` | Login (JWT) |
-| POST | `/api/v1/auth/apikey` | Generar API key |
+| POST | `/api/v1/auth/apikey` | Generar API key (auth) |
+| GET | `/api/v1/auth/apikeys` | Listar API keys (auth) |
+| DELETE | `/api/v1/auth/apikeys/:id` | Revocar API key (auth) |
 | POST | `/api/v1/monitors` | Crear monitor |
 | GET | `/api/v1/monitors` | Listar monitores |
 | GET | `/api/v1/monitors/:id` | Detalle de monitor |
@@ -55,6 +58,8 @@ El binario acepta un flag `--mode` para ejecutar componentes de forma independie
 | POST | `/api/v1/monitors/:id/resume` | Reanudar monitor |
 | GET | `/api/v1/monitors/:id/history` | Historial de checks |
 | GET | `/api/v1/monitors/:id/stats` | Estadísticas |
+| GET | `/api/v1/monitors/:id/incidents` | Incidentes del monitor |
+| GET | `/api/v1/incidents` | Incidentes recientes (`?status=open\|resolved`) |
 | GET | `/ws` | WebSocket (actualizaciones en vivo) |
 
 ## Setup local
