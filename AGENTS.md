@@ -94,6 +94,7 @@ Base: `/api/v1`. Los `{id}` son ObjectID hex de Mongo.
 | Método | Ruta                          | Auth | Descripción                        |
 |--------|-------------------------------|------|------------------------------------|
 | GET    | `/health`                     | No   | Health check del API               |
+| GET    | `/status`                     | No   | Status page pública (`?days=7..90`, def 30) |
 | POST   | `/auth/register`              | No   | Registrar usuario y devolver JWT   |
 | POST   | `/auth/login`                 | No   | Login contra MongoDB (bcrypt + JWT)|
 | POST   | `/auth/apikey`                | Sí   | Genera y persiste API key `ut_<64 hex>` (hash SHA-256) |
@@ -118,7 +119,7 @@ Auth: `Authorization: Bearer <jwt>` o `X-API-Key: <key>` (en `/ws` también `?to
 
 MongoDB (`uptime_tracker`):
 - `monitors`: `_id`, `name`, `url`, `method`, `interval_s` (def 60), `timeout_ms` (def 5000), `status`
-  (`active|paused`), `headers`, `alert_email`, `alert_webhook`, `created_at`, `updated_at`. Índice `(status, created_at desc)`.
+  (`active|paused`), `public` (bool, visible en `/status`), `headers`, `alert_email`, `alert_webhook`, `created_at`, `updated_at`. Índice `(status, created_at desc)`.
 - `check_results`: `_id`, `monitor_id`, `status_code`, `latency_ms`, `success`, `error_msg`, `checked_at`.
   Índices: `(monitor_id, checked_at desc)` y TTL en `checked_at` (`CHECK_RETENTION_DAYS`, def 30 días).
 - `incidents`: `_id`, `monitor_id`, `monitor_name`, `url`, `status` (`open|resolved`), `cause`,
@@ -136,7 +137,7 @@ RabbitMQ: exchange durable `uptime.checks` (topic) con colas durables `checks.pe
 
 ## Frontend
 
-Rutas: `/login`, `/` (dashboard), `/monitors/:id`, `/settings` (protegidas por presencia de
+Rutas: `/login`, `/status` (pública, sin auth), `/` (dashboard), `/monitors/:id`, `/settings` (protegidas por presencia de
 `token` o `apiKey` en localStorage). El dashboard agrupa tarjetas en Down / Operational / Pending / Paused.
 El detalle muestra métricas, gráfico de latencia y tabla de historial. El WebSocket se conecta a
 `ws(s)://<host>/ws` y reconecta a los 3s.

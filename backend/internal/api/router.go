@@ -67,9 +67,11 @@ func (s *Server) buildRouter() {
 	authHandler := NewAuthHandler(s.cfg.JWTSecret, s.auth)
 	monitorHandler := NewMonitorHandler(s.monitor, s.check, s.rdb)
 	incidentHandler := NewIncidentHandler(s.incidents)
+	statusHandler := NewStatusHandler(s.monitor, s.check, s.incidents)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health)
+		r.Get("/status", statusHandler.PublicStatus)
 
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)

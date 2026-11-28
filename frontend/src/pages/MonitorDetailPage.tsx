@@ -190,6 +190,7 @@ export default function MonitorDetailPage() {
               method: m.method,
               interval_s: m.interval_s,
               timeout_ms: m.timeout_ms,
+              public: m.public,
               headers: m.headers,
               alert_email: m.alert_email,
               alert_webhook: m.alert_webhook,

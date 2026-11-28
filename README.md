@@ -44,6 +44,7 @@ El binario acepta un flag `--mode` para ejecutar componentes de forma independie
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/v1/health` | Health check del sistema |
+| GET | `/api/v1/status` | Status page pública (`?days=7..90`) |
 | POST | `/api/v1/auth/register` | Registrar usuario (JWT) |
 | POST | `/api/v1/auth/login` | Login (JWT) |
 | POST | `/api/v1/auth/apikey` | Generar API key (auth) |

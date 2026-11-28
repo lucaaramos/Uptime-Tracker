@@ -13,6 +13,7 @@ const DEFAULT_FORM: MonitorRequest = {
   method: 'GET',
   interval_s: 60,
   timeout_ms: 5000,
+  public: false,
   alert_email: '',
   alert_webhook: '',
 }
@@ -216,6 +217,19 @@ export default function MonitorForm({ initial, onSubmit, onCancel }: Props) {
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
           placeholder="https://hooks.slack.com/..."
         />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          id="monitor-public"
+          type="checkbox"
+          checked={Boolean(form.public)}
+          onChange={(e) => setForm((prev) => ({ ...prev, public: e.target.checked }))}
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+        />
+        <label htmlFor="monitor-public" className="text-sm text-gray-700">
+          Show on public status page (<code className="text-xs text-gray-500">/status</code>)
+        </label>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
