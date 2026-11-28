@@ -43,6 +43,8 @@ func (h *MonitorHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Method:       req.Method,
 		Interval:     req.Interval,
 		Timeout:      req.Timeout,
+		Public:       req.Public,
+		Headers:      req.Headers,
 		AlertEmail:   req.AlertEmail,
 		AlertWebhook: req.AlertWebhook,
 	}

@@ -6,6 +6,7 @@ export interface Monitor {
   interval_s: number
   timeout_ms: number
   status: 'active' | 'paused' | 'error'
+  public?: boolean
   headers?: Record<string, string>
   alert_email?: string
   alert_webhook?: string
@@ -45,6 +46,7 @@ export interface MonitorRequest {
   method?: string
   interval_s?: number
   timeout_ms?: number
+  public?: boolean
   headers?: Record<string, string>
   alert_email?: string
   alert_webhook?: string
@@ -98,4 +100,40 @@ export interface Incident {
   started_at: string
   resolved_at?: string
   duration_s?: number
+}
+
+export interface DailyUptime {
+  date: string
+  total_checks: number
+  success_checks: number
+  uptime_percent: number
+}
+
+export interface PublicMonitorStatus {
+  id: string
+  name: string
+  status: 'up' | 'down' | 'pending'
+  uptime_percent: number
+  avg_latency_ms: number
+  last_checked_at?: string
+  daily: DailyUptime[]
+}
+
+export interface PublicIncident {
+  id: string
+  monitor_id: string
+  monitor_name: string
+  status: 'open' | 'resolved'
+  cause: string
+  started_at: string
+  resolved_at?: string
+  duration_s?: number
+}
+
+export interface PublicStatusResponse {
+  overall_status: 'operational' | 'degraded' | 'major_outage' | 'no_monitors'
+  updated_at: string
+  days: number
+  monitors: PublicMonitorStatus[]
+  recent_incidents: PublicIncident[]
 }

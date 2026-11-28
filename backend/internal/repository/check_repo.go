@@ -171,3 +171,68 @@ func percentile(sorted []float64, p int) float64 {
 	}
 	return sorted[idx]
 }
+
+// GetDailyUptime returns one entry per UTC calendar day for the last `days` days (inclusive of today).
+func (r *CheckRepo) GetDailyUptime(ctx context.Context, monitorID primitive.ObjectID, days int) ([]model.DailyUptime, error) {
+	if days <= 0 {
+		days = 30
+	}
+
+	nowUTC := time.Now().UTC()
+	today := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
+	start := today.AddDate(0, 0, -(days - 1))
+
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.M{
+			"monitor_id": monitorID,
+			"checked_at": bson.M{"$gte": start},
+		}}},
+		bson.D{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{{Key: "$dateToString", Value: bson.D{
+				{Key: "format", Value: "%Y-%m-%d"},
+				{Key: "date", Value: "$checked_at"},
+				{Key: "timezone", Value: "UTC"},
+			}}}},
+			{Key: "total", Value: bson.D{{Key: "$sum", Value: 1}}},
+			{Key: "success", Value: bson.D{{Key: "$sum", Value: bson.D{{Key: "$cond", Value: []interface{}{"$success", 1, 0}}}}}},
+		}}},
+	}
+
+	cursor, err := r.coll.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	byDate := make(map[string]model.DailyUptime, days)
+	for cursor.Next(ctx) {
+		var row struct {
+			Date    string `bson:"_id"`
+			Total   int    `bson:"total"`
+			Success int    `bson:"success"`
+		}
+		if err := cursor.Decode(&row); err == nil {
+			pct := 0.0
+			if row.Total > 0 {
+				pct = float64(row.Success) / float64(row.Total) * 100
+			}
+			byDate[row.Date] = model.DailyUptime{
+				Date:          row.Date,
+				TotalChecks:   row.Total,
+				SuccessChecks: row.Success,
+				UptimePercent: pct,
+			}
+		}
+	}
+
+	out := make([]model.DailyUptime, 0, days)
+	for i := 0; i < days; i++ {
+		d := start.AddDate(0, 0, i).Format("2006-01-02")
+		if entry, ok := byDate[d]; ok {
+			out = append(out, entry)
+		} else {
+			out = append(out, model.DailyUptime{Date: d})
+		}
+	}
+	return out, nil
+}

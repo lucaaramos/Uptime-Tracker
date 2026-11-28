@@ -10,6 +10,7 @@ import type {
   APIKeyResponse,
   APIKeyInfo,
   Incident,
+  PublicStatusResponse,
 } from '../types'
 
 const api = axios.create({
@@ -136,5 +137,10 @@ export async function getMonitorIncidents(
   const { data } = await api.get(`/monitors/${id}/incidents`, {
     params: { limit, offset },
   })
+  return data
+}
+
+export async function getPublicStatus(days = 30): Promise<PublicStatusResponse> {
+  const { data } = await axios.get('/api/v1/status', { params: { days } })
   return data
 }

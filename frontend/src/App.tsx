@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import MonitorDetailPage from './pages/MonitorDetailPage'
 import SettingsPage from './pages/SettingsPage'
+import StatusPage from './pages/StatusPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token') || localStorage.getItem('apiKey')
@@ -20,6 +21,7 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/status" element={<StatusPage />} />
           <Route
             path="/"
             element={
