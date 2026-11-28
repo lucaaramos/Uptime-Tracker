@@ -90,6 +90,24 @@ func (r *MonitorRepo) ListActive(ctx context.Context) ([]model.Monitor, error) {
 	return monitors, nil
 }
 
+func (r *MonitorRepo) ListPublic(ctx context.Context) ([]model.Monitor, error) {
+	cursor, err := r.coll.Find(
+		ctx,
+		bson.M{"public": true, "status": "active"},
+		options.Find().SetSort(bson.M{"name": 1}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var monitors []model.Monitor
+	if err := cursor.All(ctx, &monitors); err != nil {
+		return nil, err
+	}
+	return monitors, nil
+}
+
 func (r *MonitorRepo) Update(ctx context.Context, id primitive.ObjectID, req model.MonitorRequest) error {
 	update := bson.M{
 		"$set": bson.M{
@@ -98,6 +116,7 @@ func (r *MonitorRepo) Update(ctx context.Context, id primitive.ObjectID, req mod
 			"method":        req.Method,
 			"interval_s":    req.Interval,
 			"timeout_ms":    req.Timeout,
+			"public":        req.Public,
 			"headers":       req.Headers,
 			"alert_email":   req.AlertEmail,
 			"alert_webhook": req.AlertWebhook,
