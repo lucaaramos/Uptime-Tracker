@@ -18,22 +18,30 @@ export default function Navbar() {
             <Link to="/" className="text-xl font-bold text-indigo-600">
               UptimeTracker
             </Link>
-            {token && (
-              <div className="ml-10 flex items-center space-x-4">
-                <Link
-                  to="/"
-                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/settings"
-                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Settings
-                </Link>
-              </div>
-            )}
+            <div className="ml-10 flex items-center space-x-4">
+              {token && (
+                <>
+                  <Link
+                    to="/"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Settings
+                  </Link>
+                </>
+              )}
+              <Link
+                to="/status"
+                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Status
+              </Link>
+            </div>
           </div>
           <div className="flex items-center">
             {token ? (
